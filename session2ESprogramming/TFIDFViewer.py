@@ -71,38 +71,109 @@ def document_term_vector(client, index, id):
     return sorted(file_td.items()), sorted(file_df.items())
 
 
-def toTFIDF(client, index, file_id):
-    """
-    Returns the term weights of a document
+def fill_lists(l1_tv, l2_tv, l1_df, l2_df):
+    l1aux_tv = l1_tv
+    l2aux_tv = l2_tv
 
+    for i in range(len(l1aux_tv)):
+        found = False
+        for j in range(len(l2aux_tv)):
+            if l1aux_tv[i][0] == l2aux_tv[j][0]:
+                found = True
+
+        if not found:
+            l2_tv.append((l1_tv[i][0], 0))
+
+    for i in range(len(l2aux_tv)):
+        found = False
+        for j in range(len(l1aux_tv)):
+            if l2aux_tv[i][0] == l1aux_tv[j][0]:
+                found = True
+
+        if not found:
+            l1_tv.append((l2_tv[i][0], 0))
+
+    l1_tv.sort()
+    l2_tv.sort()
+
+    l1aux_df = l1_df
+    l2aux_df = l2_df
+
+    for i in range(len(l1aux_df)):
+        found = False
+        for j in range(len(l2aux_df)):
+            if l1aux_df[i][0] == l2aux_df[j][0]:
+                found = True
+
+        if not found:
+            l2_df.append((l1_df[i][0], l1_df[i][1]))
+
+    # tanto l2_df como l1_df seran iguales asi que solo hace falta 1
+
+    l2_df.sort()
+
+    return l1_tv, l2_tv, l2_df
+
+def toTFIDF(client, index, file_id1, file_id2):
+    """
+    Returns the term weights of a document  
     :param file:
     :return:
-    """
-
+    """ 
     # Get the frequency of the term in the document, and the number of documents
     # that contain the term
-    file_tv, file_df = document_term_vector(client, index, file_id)
+    file_tv1, file_df1 = document_term_vector(client, index, file_id1) 
+    file_tv2, file_df2 = document_term_vector(client, index, file_id2)
 
-    print("frequency of the term in the document -> ")
-    print(file_tv)
-    print("number of documents that contain the term -> ")
-    print(file_df)
+    file_tv1, file_tv2, file_df = fill_lists(file_tv1, file_tv2, file_df1, file_df2)
 
-    max_freq = max([f for _, f in file_tv])
+    print("d3 -> ")
+    print(file_tv1)
+    print("d4 -> ")
+    print(file_tv2)
+    print("df -> ")
+    print(file_df1)
+    
+    max_freq1 = max([f for _, f in file_tv1]) 
+    dcount = doc_count(client, index)   
+    tfidfw1 = []
+    
+    print("frequencia maxima d3 = %d" % max_freq1)
+    print("numero documentos = %d" % dcount)
 
-    dcount = doc_count(client, index)
-
-    tfidfw = []
-    for (t, w),(_, df) in zip(file_tv, file_df):
+    for (t, w),(_, df) in zip(file_tv1, file_df):
         #
         # Something happens here
         #
         # print("frequency " + str(w))
-        tfdi = w / max_freq
+        tfdi = w / max_freq1
         idfi = np.log2(dcount/df)
-        tfidfw.append(tfdi*idfi)
+        tfidfw1.append(tfdi*idfi)    
+    
+    max_freq2 = max([f for _, f in file_tv2]) 
+    dcount = doc_count(client, index)   
+    tfidfw2 = []
 
-    return normalize(tfidfw)
+    print("frequencia maxima d4 = %d" % max_freq2)
+    print("numero documentos = %d" % dcount)
+
+    for (t, w),(_, df) in zip(file_tv2, file_df):
+        #
+        # Something happens here
+        #
+        # print("frequency " + str(w))
+        # print("df word " + str(df))
+        tfdi = w / max_freq2
+        idfi = np.log2(dcount/df)
+        print("tfdi = " + str(tfdi) + " idfi = " + str(idfi) + " idfi*tfdi = " + str(tfdi*idfi))
+        tfidfw2.append(tfdi*idfi)  
+
+    print("d3 weights -> ")
+    print(tfidfw1)
+    print("d4 weights -> ")
+    print(tfidfw2)
+    
+    return tfidfw1, tfidfw2
 
 
 def print_term_weigth_vector(twv):
@@ -115,7 +186,6 @@ def print_term_weigth_vector(twv):
     # Program something here
     #
     print(twv)
-
     
 def normal(v):
     """
@@ -123,8 +193,10 @@ def normal(v):
     :param v:
     :return:
     """
-    return np.sqrt(np.dot(v, v))
 
+    print("normal -> ")
+    print(np.sqrt(np.dot(v, v)))
+    return np.sqrt(np.dot(v, v))
 
 def normalize(tw):
     """
@@ -150,8 +222,8 @@ def cosine_similarity(tw1, tw2):
     #
     # Program something here
     #
+    
     return np.dot(normalize(tw1), normalize(tw2))
-
 
 def doc_count(client, index):
     """
@@ -162,33 +234,6 @@ def doc_count(client, index):
     :return:
     """
     return int(CatClient(client).count(index=[index], format='json')[0]['count'])
-
-
-def fill_lists(l1, l2):
-    l1aux = l1
-    l2aux = l2
-
-    for i in range(len(l1aux)):
-        found = False
-        for j in range(len(l2aux)):
-            if l1[i][0] == l2[j][0]:
-                found = True
-
-        if not found:
-            l2.append((l1[i][0], 0))
-
-    for i in range(len(l2aux)):
-        found = False
-        for j in range(len(l1aux)):
-            if l2[i][0] == l1[j][0]:
-                found = True
-
-        if not found:
-            l1.append((l2[i][0], 0))
-
-    l1.sort()
-    l2.sort()
-    return l1, l2
 
 
 if __name__ == '__main__':
@@ -213,17 +258,12 @@ if __name__ == '__main__':
         file1_id = search_file_by_path(client, index, file1)
         file2_id = search_file_by_path(client, index, file2)
 
-        file1_tv, file1_df = document_term_vector(client, index, file1_id)
-        file2_tv, file2_df = document_term_vector(client, index, file2_id)
-
-        # rellenar cada uno de los vectores con lo que le falta del otro vector
 
         # Compute the TF-IDF vectors
-        file1_tw = toTFIDF(client, index, file1_id)
-        file2_tw = toTFIDF(client, index, file2_id)
+        # file1_tw = toTFIDF(client, index, file1_id)
+        # file2_tw = toTFIDF(client, index, file2_id)
 
-        # file1_tw = toTFIDF(file1_tv, file1_df)
-        # file2_tw = toTFIDF(file2_tv, file2_df)
+        file1_tw, file2_tw = toTFIDF(client, index, file1_id, file2_id)
 
         if args.print:
             print(f'TFIDF FILE {file1}')
