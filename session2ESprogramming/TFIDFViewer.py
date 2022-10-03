@@ -70,32 +70,36 @@ def document_term_vector(client, index, id):
             file_df[t] = termvector['term_vectors']['text']['terms'][t]['doc_freq']
     return sorted(file_td.items()), sorted(file_df.items())
 
+def is_end(i, length):
+    if i < length: return False
+    else: return True
 
 def fill_lists(l1_tv, l2_tv, l1_df, l2_df):
     l1aux_tv = l1_tv
     l2aux_tv = l2_tv
-
-    for i in range(len(l1aux_tv)):
-        found = False
-        for j in range(len(l2aux_tv)):
-            if l1aux_tv[i][0] == l2aux_tv[j][0]:
-                found = True
-
-        if not found:
-            l2_tv.append((l1_tv[i][0], 0))
-
-    for i in range(len(l2aux_tv)):
-        found = False
-        for j in range(len(l1aux_tv)):
-            if l2aux_tv[i][0] == l1aux_tv[j][0]:
-                found = True
-
-        if not found:
-            l1_tv.append((l2_tv[i][0], 0))
-
+    
     l1_tv.sort()
     l2_tv.sort()
 
+    len1 = len(l1aux_tv)
+    len2 = len(l2aux_tv)
+
+    i,j = 0, 0
+
+    while not is_end(i, len1) or not is_end(j, len2):
+        if l1aux_tv[i][0] < l2aux_tv[j][0]:
+            l2_tv.append((l1_tv[i][0], 0))
+            if not is_end(i, len1): i += 1
+        elif l1aux_tv[i][0] > l2aux_tv[j][0]:
+            l1_tv.append((l2_tv[j][0], 0))
+            if not is_end(j, len2): j += 1
+        else :
+            if not is_end(i, len1): i+=1
+            if not is_end(j, len2): j+=1
+    
+    l1_tv.sort()
+    l2_tv.sort()
+  
     l1aux_df = l1_df
     l2aux_df = l2_df
 
@@ -127,19 +131,19 @@ def toTFIDF(client, index, file_id1, file_id2):
 
     file_tv1, file_tv2, file_df = fill_lists(file_tv1, file_tv2, file_df1, file_df2)
 
-    print("d3 -> ")
-    print(file_tv1)
-    print("d4 -> ")
-    print(file_tv2)
-    print("df -> ")
-    print(file_df1)
+    # print("d3 -> ")
+    # print(file_tv1)
+    # print("d4 -> ")
+    # print(file_tv2)
+    # print("df -> ")
+    # print(file_df1)
     
     max_freq1 = max([f for _, f in file_tv1]) 
     dcount = doc_count(client, index)   
     tfidfw1 = []
     
-    print("frequencia maxima d3 = %d" % max_freq1)
-    print("numero documentos = %d" % dcount)
+    # print("frequencia maxima d3 = %d" % max_freq1)
+    # print("numero documentos = %d" % dcount)
 
     for (t, w),(_, df) in zip(file_tv1, file_df):
         #
@@ -154,8 +158,8 @@ def toTFIDF(client, index, file_id1, file_id2):
     dcount = doc_count(client, index)   
     tfidfw2 = []
 
-    print("frequencia maxima d4 = %d" % max_freq2)
-    print("numero documentos = %d" % dcount)
+    # print("frequencia maxima d4 = %d" % max_freq2)
+    # print("numero documentos = %d" % dcount)
 
     for (t, w),(_, df) in zip(file_tv2, file_df):
         #
@@ -165,13 +169,13 @@ def toTFIDF(client, index, file_id1, file_id2):
         # print("df word " + str(df))
         tfdi = w / max_freq2
         idfi = np.log2(dcount/df)
-        print("tfdi = " + str(tfdi) + " idfi = " + str(idfi) + " idfi*tfdi = " + str(tfdi*idfi))
+        # print("tfdi = " + str(tfdi) + " idfi = " + str(idfi) + " idfi*tfdi = " + str(tfdi*idfi))
         tfidfw2.append(tfdi*idfi)  
 
-    print("d3 weights -> ")
-    print(tfidfw1)
-    print("d4 weights -> ")
-    print(tfidfw2)
+    # print("d3 weights -> ")
+    # print(tfidfw1)
+    # print("d4 weights -> ")
+    # print(tfidfw2)
     
     return tfidfw1, tfidfw2
 
